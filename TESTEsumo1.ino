@@ -11,12 +11,16 @@
 /*============================================================================*/
 //Defines do projeto.
 //Defines do sensor ultrassônico
-#define ECHO 13
-#define TRIG 12
+#define ECHO 12
+#define TRIG 13
 
 //velocidade
 #define _VATK 250
-#define _VRST 100
+#define _VRST 180
+
+//Distância para ataque
+#define _DATK 50
+
 //definir pino de interrupção
 #define BOT 2 //Interrupção 0.
 
@@ -61,12 +65,16 @@ DCmotor Motor1, Motor2;
 
 /*============================================================================*/
 //Criando as funções
-void frente(int t);
-void parado(int t);
-void para(int t);
-void esquerda(int t);
-void direita(int t);
+void frente();
+void parado();
+void para();
+void esquerda();
+void direita();
 void rastreamento(int t);
+void re();
+
+//Função para configurar pinos e etc
+void initRobot();
 
 //Criando função de medição
 long detectar();
@@ -101,16 +109,9 @@ void setup() {
      ChaveOnOff: Função de callback da interrupção
      Rising: Altera de low para high => Interrupção.
    ***************************************************/
-
-  //Controle de pinos do sensor de distância
-  pinMode(ECHO, INPUT);
-  pinMode(TRIG, OUTPUT);
-
-  //Iniciando a Serial.
-  Serial.begin(9600);
-
-  //Deixar velocidade fixa
-  velocidade(150);
+  //Função para configurar pinos do robô
+  initRobot();
+  delay(1000);
 }
 
 /*============================================================================*/
@@ -119,59 +120,60 @@ void setup() {
 void loop() {
   bool op;
   //Pega valor em cm da distância.
-  float cm;
+  float cm=0;
+  cm=cmDet();
+  Serial.print("Dist: ");
+  Serial.print(cm);
+  Serial.println(" cm");
   //Rastreia até encontrar algo, e então ele vai em direção.
-  if (cm > 20) {
-    velocidade(_VRST);//Velocidade para rastrear
-    rastreamento(3000);
-    cm=cmDet();
+  if (cm > _DATK) {
+    //Rotina de rastreamento
+    rastreamento();
   }
   else{
-    velocidade(_VATK);//Velocidae máxima para atacar
-    frente(3000);//Vai em frente por 3 segundos
-    cm=cmDet();
+    //Começa a atacar
+    frente();
   }
 }
 /*============================================================================*/
 //Definindo funções utilizadas pelo robô.
 
-void frente(int t)
+void frente()
 {
   // Comando para o motor ir para frente
+  Serial.println("EM FRENTE!");
+  velocidade(_VATK);//Velocidae máxima para atacar
   Motor1.Forward();
   Motor2.Forward();
-  delay(t);
 }
 
-void re(int t)
+void re()
 {
   // Comando para o motor ir para trás
   Motor1.Backward();
   Motor2.Backward();
-
-  delay(t);
 }
 
-void esquerda(int t)
+void esquerda()
 {
   //Comando para o motor parar
   Motor1.Stop(); //Comando para o motor para
   Motor2.Forward();
-  delay(t);
+
 }
 
-void direita(int t)
+void direita()
 {
   Motor1.Forward();
   Motor2.Stop();
-  delay(t);
+
 }
 
-void para(int t)
+void para()
 {
   Motor1.Stop(); // Comando para o motor parar
   Motor2.Stop();
-  delay(t);
+
 }
 
 void velocidade(int num)
@@ -181,7 +183,7 @@ void velocidade(int num)
   //Define a velocidade do carrinho
   Motor1.Speed(num);
   Motor2.Speed(num);
-  Serial.println("Velocidade dos motores configurada para:");
+  Serial.print("Velocidade dos motores configurada para:");
   Serial.println(num);
 }
 
@@ -236,23 +238,43 @@ void chaveOnOff()
 
 }
 
-void rastreamento(int t) {
+void rastreamento() {
   //Gira até detectar alguém
+  Serial.println("RASTREAMENTO");
+  velocidade(_VRST);
   Motor1.Forward();
   Motor2.Backward();
-  delay(t);
+  
 }
 
 
-void rotina_motor()
+void rotina_motor(int t)
 {
-  frente(3000);
+  frente();
   Serial.println("Frente");
-  esquerda(2000);
+  delay(t);
+  esquerda();
   Serial.println("Esquerad");
-  direita(2000);
+  delay(t);
+  direita();
   Serial.println("Direita");
-  re(2000);
+  delay(t);
+  re();
   Serial.println("Re");
-  para(4000);
+  delay(t);
+  para();
+  Serial.println("PARA");
+}
+
+void initRobot(){
+
+  //Controle de pinos do sensor de distância
+  pinMode(ECHO, INPUT);
+  pinMode(TRIG, OUTPUT);
+
+  //Iniciando a Serial.
+  Serial.begin(9600);
+  Serial.print("Distancia de ataque configurada: ");
+  Serial.print(_DATK);
+  Serial.println(" cm");
 }
