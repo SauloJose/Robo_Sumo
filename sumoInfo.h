@@ -1,16 +1,27 @@
+#ifndef SUMOINFO_H
+#define SUMOINFO_H
+
 /*================|| DEFINIÇÕES ||====================*/
 #define ECHO 13
 #define TRIG 12
 #define BOT 2
+#define NumberFotoSensor 4
+#define NumberUltraSonic 1
+
+
+//Struct de dados para os sensores fotoelétricos
+struct sensorFE{
+  bool state[NumberFotoSensor];
+};
+
 /*================|| CLASSES ||====================*/
 class motorDC {
   private:
     //Atributos
     uint16_t Speed = 255, pin1, pint2;
   public:
-    //Métodos
     //Configurando pinos do motor
-    void pinout(uint16_t in1, in2);
+    void pinout(uint16_t in1, uint16_t in2);
 
     //velocidade
     void SpeedConfig(uint16_t spd);
@@ -23,17 +34,17 @@ class motorDC {
 
     //Parar o motor
     void Stop();
+
+    //Girar o motor tantos graus.
+    void turn(uint16_t spd, uint16_t angle);
 };
 
 //classe controlando o robô
-class motorDC: public robo {
-    private
+class Robot: private motorDC {
+  private:
     //Velocidade total de ambos os motores.
     uint16_t speedtot = 255;
-
-    //Criando objetos para ambos os motores.
-    motorDC motorA, motorB;
-
+    motorDC rightMotor,leftMotor;
   public:
     //Cadastrar motores para controlar o carro
     void setupCar(motorDC m1, motorDC m2);
@@ -66,4 +77,10 @@ float convertCm();
 //Rotina do sensor.
 void routineMotor(uint16_t t);
 
-//Fazendo as configurações
+//Procedimentos
+void initFreeRTOS();
+
+//Configura as portas para serem utilizadas
+void initPins();
+
+#endif
