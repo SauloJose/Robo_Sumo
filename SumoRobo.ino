@@ -4,8 +4,7 @@
    Equipe: Alan, Italo, Saulo, Wellington.
    Objetivo: O robô em questão irá batalhar em um ringue de batalha de robô sumo (classificação 500g)
    no qual deverá agir e batalhar de forma autônoma, sem ajuda de terceiros.
-   Ultima modificação: 
-   placa: UNO.
+   Ultima modificação: 02/07/2022
 ****************************************************************************************************/
 
 /****************************************************************************************************
@@ -16,17 +15,17 @@
   |                |                |                   |  decisões de ataque e defesa.             |
   |----------------|----------------|-------------------|-------------------------------------------|
   |-vTaskSensor    |      00        |         02        |  Tarefa responsável por analisar o ambi-  |
-  |                |                |                   |ente e enviar as informações para o cerebro| 
+  |                |                |                   |ente e enviar as informações para o cerebro|
   |----------------|----------------|-------------------|-------------------------------------------|
   |-vTaskOnOFF     |      00        |         02        |  Responsável por ligar ou desligar o robô |
   |----------------|----------------|-------------------|-------------------------------------------|
   |-vTaskMotor     |      00        |         04        |  Responsável por realizar os movimentos   |
 ****************************************************************************************************/
 
- //Incluindo bibliotecas
+//Incluindo bibliotecas
 #include "sumoInfo.h"
 #include <Arduino_FreeRTOS.h>
-#include <queue.h>
+#include "queue.h"
 
 //Gerando filas
 QueueHandle_t xFilaMov;
@@ -49,26 +48,20 @@ void vTaskMotor(void* pvParamaters);
 volatile bool onRobot = HIGH;
 
 
-//Iniciando dados importantes do robô
 void setup() {
-  //Inicializando comunicação Serial
-  Serial.begin(9600);
-  Serial.println("[BMO]: Iniciando configurações....");
-  initPins();//Configura as portas que serão utilizadas.
-  initFreeRTOS();//Inicializando o sistema operacional
-  //A partir daqui as tarefas já estão rodando.
+  //Inicializando configurações iniciais do robô
+  initRobot();//Inicializa as configurações dos pinos do robô
+  initFreeRTOS();//Inicializando o sistema operacional (tarefas e filas necessárias)
 }
 
-//Deletando função looping
 void loop() {
   vTaskDelete(NULL); //Deletando a taskLoop, já que não será necessário.
 }
 
 
 /*============================|| DEFINIÇÃO DAS FUNÇÕES DE INICIALIZAÇÃO||==============================*/
-//Procedimento para iniciar o FreeRTOS com as tarefas, depois disso, o trabalho é só das tarefas
-//Sequência de procedimentos.
-//Cria filas -> Cria tarefa de sensores -> Cria tarefa cérebro -> Cria tarefa motor.
+
+//Procedimento para iniciar o FreeRTOS com as tarefas
 void initFreeRTOS() {
   Serial.println("[BMO]: Iniciando FreeRTOS.");
   BaseType_t returnSensor, returnBrain, returnMotor, returnOnOFF;
@@ -76,13 +69,13 @@ void initFreeRTOS() {
   //Gerando filas necessárias.
   //Fila para movimentação do robÔ
   xFilaMov = xQueueCreate(
-               2,//Quantidade de comandos enviados;
+               1,//Quantidade de comandos enviados;
                sizeof(uint8_t));//Tamanho do comando enviado;
 
   //Fila para receber dados do sensor
   xFilaPosition = xQueueCreate(
-                    2,//Quantidade de dados enviados
-                    sizeof(sensorFE)); //tamanho do dado enviado
+                    1,//Quantidade de dados enviados
+                    sizeof(sensorIR)); //Tamanho de cada dado
 
   xFilaDistance = xQueueCreate(
                     5,
@@ -109,7 +102,7 @@ void initFreeRTOS() {
                     , NULL //Parâmetro de inicialização da tarefa
                     , 3 //Prioridade da tarefa
                     , &vTaskBrainHandle); //Objeto identificador (Handle)
-   
+
     if (returnBrain != pdTRUE) {
       Serial.println("[BMO]: Não foi possível gerar a tarefa BRAIN.");
       while (1);
