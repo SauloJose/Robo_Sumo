@@ -2,29 +2,40 @@
 #define SUMOINFO_H
 
 /*================|| DEFINIÇÕES ||====================*/
+//Definições do sensor ultrasônico
 #define ECHO 13
 #define TRIG 12
+
+//Definições gerais
 #define BOT 2
-#define NumberFotoSensor 4
+#define NumberIRsensor 4
 #define NumberUltraSonic 1
+#define _VATK 250
+#define _VRST 180
+#define _DATK 50
 
+//Definição dos sensores infravermelhos
+#define SD1 8
+#define SD2 7
 
-//Struct de dados para os sensores fotoelétricos
-struct sensorFE{
-  bool state[NumberFotoSensor];
+//Struct responsável por pegar os dados dos sensores infravermelhos
+struct sensorIR {
+  bool Value[NumberIRsensor];
 };
 
 /*================|| CLASSES ||====================*/
+//Classe para controlar os motores.
 class motorDC {
   private:
     //Atributos
-    uint16_t Speed = 255, pin1, pint2;
+    uint16_t Speed = 255, pin1, pin2;
   public:
-    //Configurando pinos do motor
-    void pinout(uint16_t in1, uint16_t in2);
+    //Constructor do motor
+    motorDC(uint16_t _pin1, uint16_t _pin2, uint16_t _Speed);
+    motorDC();
 
     //velocidade
-    void SpeedConfig(uint16_t spd);
+    void SpeedConfig(uint16_t _spd);
 
     //girar no sentido direto
     void Forward();
@@ -36,36 +47,54 @@ class motorDC {
     void Stop();
 
     //Girar o motor tantos graus.
-    void turn(uint16_t spd, uint16_t angle);
+    void turnM(uint16_t spd, uint16_t angle);
 };
 
 //classe controlando o robô
 class Robot: private motorDC {
   private:
     //Velocidade total de ambos os motores.
-    uint16_t speedtot = 255;
-    motorDC rightMotor,leftMotor;
+    uint8_t spd = 255;//Velocidade máxima por default
+    float  distDetector;
+
+    //objetos MOTORDC que serão criados para controlar eles, com o objeto robô
+    motorDC* ME, *MD; 
+    //Motor da esquer (ME) da, motor da direita(MD).
+    //Endereço para poderem ser manipulados por outras classes.
+    
   public:
     //Cadastrar motores para controlar o carro
-    void setupCar(motorDC m1, motorDC m2);
+    Robot(motorDC* _ME=NULL, motorDC* _MD=NULL,uint8_t _spd=255);
+    Robot();
 
     //Andar para frente
-    void ForwardCar(uint16_t t);
+    void ForwardCar(uint16_t t);//Andar para frente por t segundos
+    void ForwardCar();
 
     //Dar ré
-    void BackwardCar(uint16_t t);
+    void BackwardCar(uint16_t t);//Ré por t segundos
+    void BackwardCar();
 
-    //Parar o carro
-    void StopCar(uint16_t t);
+    //Parar o robô
+    void StopCar(uint16_t t);//Parar por t segundos
+    void StopCar();
 
     //Andar para a direita
-    void RightCar(uint16_t t);
+    void RightCar(uint16_t t);//Andar para a direitar por t segundos
+    void RightCar();
 
     //Andar para a esquerda
-    void LeftCar(uint16_t t);
+    void LeftCar(uint16_t t); // Andar para a esquerda por t segundos
+    void LeftCar();
 
-    //Girar theta graus
-    void turn(uint16_t spd, uint16_t angle);
+    //Girar o robô x graus
+    void turnR(uint16_t spd, uint16_t angle);
+
+    //Método que inicia rotina de rastreamento de um carro inimigo.
+    void rastreamento();
+
+    //Método para realizar rotina de teste dos motores
+    void rotinaRobo(uint16_t t);
 };
 /*================|| Funçõoes ||====================*/
 //Ativar pulso do sensor ultrasônico
@@ -80,7 +109,7 @@ void routineMotor(uint16_t t);
 //Procedimentos
 void initFreeRTOS();
 
-//Configura as portas para serem utilizadas
-void initPins();
+//Procedimento para inicializar pinos
+void initRobot();
 
 #endif
