@@ -1,4 +1,4 @@
-/***************************************************************************************************
+ /***************************************************************************************************
    PROGRAMA PRINCIPAL DO PROJETO DE ROBÔ SUMÔ - IFAL PALMEIRA - GRUPO DE ROBÓTICA - VERSÃO 0.9
    Instituto Federal de Alagoas (IFAL) - Campus Palmeira dos Índios.
    Equipe: Alan, Italo, Saulo, Wellington.
@@ -13,6 +13,10 @@
 //Defines do sensor ultrassônico
 #define ECHO 12
 #define TRIG 13
+
+//Definindo pinos dos sensores infravermelho
+#define SD1 9
+#define SD2 8
 
 //velocidade
 #define _VATK 250
@@ -70,7 +74,7 @@ void parado();
 void para();
 void esquerda();
 void direita();
-void rastreamento(int t);
+void rastreamento();
 void re();
 
 //Função para configurar pinos e etc
@@ -85,7 +89,8 @@ float cmDet();
 //função callback
 void chaveOnoff();
 
-void rotina_motor();
+//Função para testar motores.
+void rotina_motor(int t);
 
 /*============================================================================*/
 
@@ -134,6 +139,8 @@ void loop() {
     //Começa a atacar
     frente();
   }
+  /*//Aqui vai estar o código para testar os sensores. 
+  */
 }
 /*============================================================================*/
 //Definindo funções utilizadas pelo robô.
@@ -217,10 +224,7 @@ void chaveOnOff()
   static unsigned long lastMillis = 0;
   unsigned long newMillis = millis();
 
-  if (newMillis - lastMillis < 50)
-  {
-
-  }
+  if (newMillis - lastMillis < 50){}
   else
   {
     estado = !estado;
@@ -272,6 +276,10 @@ void initRobot(){
   pinMode(ECHO, INPUT);
   pinMode(TRIG, OUTPUT);
 
+  //Pinos dos sensores infravermelhos.
+  pinMode(SD1,INPUT);
+  pinMode(SD2,INPUT);
+  
   //Iniciando a Serial.
   Serial.begin(9600);
   Serial.print("Distancia de ataque configurada: ");
