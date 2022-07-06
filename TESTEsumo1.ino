@@ -1,11 +1,11 @@
- /***************************************************************************************************
-   PROGRAMA PRINCIPAL DO PROJETO DE ROBÔ SUMÔ - IFAL PALMEIRA - GRUPO DE ROBÓTICA - VERSÃO 0.9
-   Instituto Federal de Alagoas (IFAL) - Campus Palmeira dos Índios.
-   Equipe: Alan, Italo, Saulo, Wellington.
-   Objetivo: O robô em questão irá batalhar em um ringue de batalha de robô sumo (classificação 500g)
-   no qual deverá agir e batalhar de forma autônoma, sem ajuda de terceiros.
-   Ultima modificação: 
-   placa: UNO.
+/***************************************************************************************************
+  PROGRAMA PRINCIPAL DO PROJETO DE ROBÔ SUMÔ - IFAL PALMEIRA - GRUPO DE ROBÓTICA - VERSÃO 1.0
+  Instituto Federal de Alagoas (IFAL) - Campus Palmeira dos Índios.
+  Equipe: Alan, Italo, Saulo, Wellington.
+  Objetivo: O robô em questão irá batalhar em um ringue de batalha de robô sumo (classificação 500g)
+  no qual deverá agir e batalhar de forma autônoma, sem ajuda de terceiros.
+  Ultima modificação: 05/07/2022 - 15:47
+  placa: UNO.
 ****************************************************************************************************/
 
 /*============================================================================*/
@@ -17,15 +17,20 @@
 //Definindo pinos dos sensores infravermelho
 #define SD1 9
 #define SD2 8
+#define SD3 4
+#define SD4 3
 
-//velocidade
-#define _VATK 250
+//Sensores infravermelhos retornan LOW quando acionados.
+
+//velocidades de ataque (VATK) e rastreamento (VRST)
+#define _VATK 255
 #define _VRST 180
 
-//Distância para ataque
+//Distâncias para  atacar
 #define _DATK 50
+#define _DATKMIN 10
 
-//definir pino de interrupção
+//definir pino de interrupção, no nosso caso, será remoto.
 #define BOT 2 //Interrupção 0.
 
 /*============================================================================*/
@@ -70,12 +75,18 @@ DCmotor Motor1, Motor2;
 /*============================================================================*/
 //Criando as funções
 void frente();
+void frente(uint8_t t);
 void parado();
+void parado(uint8_t t);
 void para();
+void para(uint8_t t);
 void esquerda();
+void esquerda(uint8_t t);
 void direita();
-void rastreamento();
+void direita(uint8_t t);
+void rastreamento(bool dir);
 void re();
+void re(uint8_t t);
 
 //Função para configurar pinos e etc
 void initRobot();
@@ -125,66 +136,165 @@ void setup() {
 void loop() {
   bool op;
   //Pega valor em cm da distância.
-  float cm=0;
-  cm=cmDet();
+  float cm = 0;
+  cm = cmDet();
+
+  //Valores dos sensores infravermelhos
+  //V1,V2,V3 e V4 ficam em true caso sejam acionadas
+  bool v1 = (LOW == digitalRead(SD1));
+  bool v2 = (LOW == digitalRead(SD2));
+  bool v3 = (LOW == digitalRead(SD3));
+  bool v4 = (LOW == digitalRead(SD4));
+
+  //Valor de localização do sensor ultrassônico
+  bool us = false;//Inicializa em false
+  us = (cm < _DATK); //Verifica se está ou não dentro da distância
+
+
+  //Pega os valores da distância.
   Serial.print("Dist: ");
   Serial.print(cm);
   Serial.println(" cm");
   //Rastreia até encontrar algo, e então ele vai em direção.
-  if (cm > _DATK) {
+  if (us) {//Caso a distância entre objeto seja menor que a distância mínima de ataque.
+    //Maneiras de ataque
+    if (((~v1)&v3 & v4) || ((~v1) && (~v2)) || ((~v2) && v4)) { //Situação A1 ->ATAQUE
+      frente();
+    }
+    else if ((~v1) && v2 && (~v3)) { //-> Situação E1 -> Combinação de ataque.
+      //Analisa distância entre os objetos.
+      if (cm < _DATKMIN) {//Distância mínima para ataque!
+        frente();
+      }
+      else {//Reposicionar, estratégia!
+        esquerda(100);//Reposicionando
+        rastreamento(true);//Rastrear para a direita
+      }
+    }
+    else if ((v1) && (~v2) && (~v4)) { //-> SITUAÇÃO E2-> COMBINAÇÃO DE ATAQUE
+      //Analisa distÂncia entre os objetos
+      if (cm < _DATKMIN) {//Distância mínima para ataque!
+        frente();
+      }
+      else {//Reposicionar, estratégia!
+        direita(100);
+        rastreamento(false);//Rastrear para a esquerda
+      }
+    }
+    else if ((v1 && v2 && (~v3) && (v4)) || (v1 && v2 && (v3) && (~v4)))  { //=> SITUAÇÃO E3 -> COMBINAÇÃO DE ATAQUE.
+      re(200);//Dá ré
+      rastreamento(true);//Rastreia para a direita
+    }
+    else if (v1 && v2 && (~v3) && (~v4)) {//Caso de vitória
+      //Nesse caso, provavelmente ele ganhou. Então só comemora
+      rastreamento(true);
+      velocidade(255);
+      //Colocar uns leds para piscar e um buzzer para fzr zuada (tocando a música de starwars)
+
+    }
+    else {//Situação de erro, ou seja, impossível de acontecer.
+      //Sinalisar um led é uma boa opção...
+      rastreamento(true);
+    }
+  }
+  else {//Se a distância detectada for maior que a distância de ataque
+    //Rastrear
+    if (((~v1) && (~v3) && (v4)) || ((~v1) && (v2) && (~v3))) { //Caso R1
+
+    }
+    else if (((~v1) && (~v2) && v3) || ((~v2) && (~v4))) { //Caso R2
+
+    }
+    else if ((v1 && v2 && (~v3)) || (v1 && v2 && (~v4))) { //Caso R3
+
+    }
+    else { //Caso de erro ou não planejado
+      rastreamento(true);
+
+    }
+
+
+  }
+  /*//Aqui vai estar o código para testar os sensores.
+    //Código base de apenas rastrear e seguir.
+    if (cm > _DATK) {
+    //Enquanto não encontrar um alvo dentro do alcance, ele rastreina os inimigos.
     //Rotina de rastreamento
     rastreamento();
-  }
-  else{
-    //Começa a atacar
+    }
+    else {
     frente();
-  }
-  /*//Aqui vai estar o código para testar os sensores. 
+    }
+
   */
 }
 /*============================================================================*/
 //Definindo funções utilizadas pelo robô.
 
-void frente()
-{
+void frente() {
   // Comando para o motor ir para frente
   Serial.println("EM FRENTE!");
-  velocidade(_VATK);//Velocidae máxima para atacar
+  velocidade(_VATK);//Velocidade máxima para atacar
   Motor1.Forward();
   Motor2.Forward();
 }
 
-void re()
-{
+void frente(uint8_t t) {
+  Serial.println("EM FRENTE!");
+  velocidade(_VATK);//Velocidade máxima para atacar
+  Motor1.Forward();
+  Motor2.Forward();
+  delay(t);
+}
+void re() {
   // Comando para o motor ir para trás
   Motor1.Backward();
   Motor2.Backward();
 }
 
-void esquerda()
-{
+void re(uint8_t t) {
+  // Comando para o motor ir para trás
+  Motor1.Backward();
+  Motor2.Backward();
+  delay(t);
+}
+
+void esquerda() {
   //Comando para o motor parar
   Motor1.Stop(); //Comando para o motor para
   Motor2.Forward();
-
 }
 
-void direita()
-{
+void esquerda(uint8_t t) {
+  //Comando para o motor parar
+  Motor1.Stop(); //Comando para o motor para
+  Motor2.Forward();
+  delay(t);
+}
+
+void direita() {
   Motor1.Forward();
   Motor2.Stop();
-
 }
 
-void para()
-{
+void direita(uint8_t t) {
+  Motor1.Forward();
+  Motor2.Stop();
+  delay(t);
+}
+
+void para() {
   Motor1.Stop(); // Comando para o motor parar
   Motor2.Stop();
-
 }
 
-void velocidade(int num)
-{
+void para(uint8_t t) {
+  Motor1.Stop(); // Comando para o motor parar
+  Motor2.Stop();
+  delay(t);
+}
+
+void velocidade(int num) {
   //Transforma o número no intervalo de 0 a 255
   constrain(num, 0, 255);
   //Define a velocidade do carrinho
@@ -195,8 +305,7 @@ void velocidade(int num)
 }
 
 //Função de detectar do sensor.
-long detectar()
-{
+long detectar() {
   digitalWrite(TRIG, LOW);
   delay(3);
   digitalWrite(TRIG, HIGH);
@@ -208,8 +317,7 @@ long detectar()
 
 
 //Função de conversão de valor.
-float  cmDet()
-{
+float  cmDet() {
   long tempo = detectar();
   tempo = tempo / 2;
   float distancia = tempo * 0.034; // cm
@@ -217,14 +325,12 @@ float  cmDet()
   return distancia;
 }
 
-//Função de callback do carro.
 //Aqui é uma função para ligar e desligar, por enquanto.
-void chaveOnOff()
-{
+void chaveOnOff() {
   static unsigned long lastMillis = 0;
   unsigned long newMillis = millis();
 
-  if (newMillis - lastMillis < 50){}
+  if (newMillis - lastMillis < 50) {}
   else
   {
     estado = !estado;
@@ -242,18 +348,26 @@ void chaveOnOff()
 
 }
 
-void rastreamento() {
+void rastreamento(bool dir) {
   //Gira até detectar alguém
   Serial.println("RASTREAMENTO");
-  velocidade(_VRST);
-  Motor1.Forward();
-  Motor2.Backward();
-  
+  if (dir = true) {
+    //Rastreia para o lado direito.
+    velocidade(_VRST);
+    Motor1.Forward();
+    Motor2.Backward();
+  }
+  else {
+    //Rastreia para o lado esquerdo
+    velocidade(_VRST);
+    Motor1.Backward();
+    Motor2.Forward();
+  }
 }
 
 
-void rotina_motor(int t)
-{
+//Apenas uma rotina para testar se os motores estão funcionando corretamente
+void rotina_motor(int t) {
   frente();
   Serial.println("Frente");
   delay(t);
@@ -270,16 +384,18 @@ void rotina_motor(int t)
   Serial.println("PARA");
 }
 
-void initRobot(){
-
+//Função para iniciar os GPIO's do Arduino
+void initRobot() {
   //Controle de pinos do sensor de distância
   pinMode(ECHO, INPUT);
   pinMode(TRIG, OUTPUT);
 
   //Pinos dos sensores infravermelhos.
-  pinMode(SD1,INPUT);
-  pinMode(SD2,INPUT);
-  
+  pinMode(SD1, INPUT);
+  pinMode(SD2, INPUT);
+  pinMode(SD3, INPUT);
+  pinMode(SD4, INPUT);
+
   //Iniciando a Serial.
   Serial.begin(9600);
   Serial.print("Distancia de ataque configurada: ");
