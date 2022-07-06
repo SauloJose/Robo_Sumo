@@ -158,10 +158,10 @@ void loop() {
   //Rastreia até encontrar algo, e então ele vai em direção.
   if (us) {//Caso a distância entre objeto seja menor que a distância mínima de ataque.
     //Maneiras de ataque
-    if (((~v1)&v3 & v4) || ((~v1) && (~v2)) || ((~v2) && v4)) { //Situação A1 ->ATAQUE
+    if (((~v1)&&(~V2)) || ((~v2) && v4) || ((~v1) && v4)) { //Situação A1 ->ATAQUE
       frente();
     }
-    else if ((~v1) && v2 && (~v3)) { //-> Situação E1 -> Combinação de ataque.
+    else if ((~v1) && v2 && (~v2)) { //-> Situação E1 -> Combinação de ataque.
       //Analisa distância entre os objetos.
       if (cm < _DATKMIN) {//Distância mínima para ataque!
         frente();
