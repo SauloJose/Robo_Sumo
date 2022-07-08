@@ -199,6 +199,8 @@ float ultrassonic::captureDistance() {
   //Portanto, podem ser vistar após a execução desse método.
   //Zerando o tempo para que não ocorra erro na próxima execução
   _timeD = 0;
+
+  return distance;
 }
 
 
@@ -214,4 +216,6 @@ bool sensorIV::ReadSensor() {
   state = (LOW == digitalRead(_pinDg));
   //O módulo utilizado retorna LOW quando encontra um objeto, portanto
   //Caso o objeto esteja em Low,ele irá retornar esse valor.
+
+  return state;
 }
