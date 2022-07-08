@@ -2,98 +2,20 @@
 //Implementação das funções
 
 /*==================================|| DEFINIÇÃO DAS FUNÇÕES ||==============================*/
-//Ativar pulso do sensor ultrasônico
-float Ultrassonic() {
-  digitalWrite(TRIG, LOW);
-  vTaskDelay(pdMS_TO_TICKS(3));
-  digitalWrite(TRIG, HIGH);
-  vTaskDelay(pdMS_TO_TICKS(10));
-  digitalWrite(TRIG, LOW);
-
-  return pulseIn(ECHO, HIGH);
-}
-
-//Converter leitura para distância
-float convertCm() {
-  long tempo = Ultrassonic();
-  tempo = tempo / 2;
-
-  float dist;
-  dist = tempo * 0.034; //cm
-
-  return dist;
-}
-
-//Rotina do sensor.
-void routineMotor(uint16_t t) {
-
-}
-
-
 //Função para iniciar robô
-void initRobot() {
+void initSystem() {
   //Inicia comunicação Serial 0 e 1
   Serial.begin(9600);
   Serial.println("[BMO]: Iniciando configuração dos pinos...");
-  //Pinos do sensor de distância
-  pinMode(ECHO, INPUT);
-  pinMode(TRIG, OUTPUT);
-
-  //Pinos dos sensores infravermelhos
-  pinMode(SD1, INPUT);
-  pinMode(SD2, INPUT);
 
   Serial.print("[BMO]: Distância de ataque configurada: ");
   Serial.print(_DATK);
   Serial.println(" cm");
 }
-
-/*========================|| DEFINIÇÃO DOS TAREFAS (TASKS) ||==============================*/
-//Tarefa cérebro -> Responsável por computador os dados dos sensores
-void vTaskBrain(void* pvParamaters) {
-  (void*) pvParamaters;
-
-  for (;;) {
-
-  }
-}
-
-//Tarefa sensor -> Responsável por pegar os dados dos sensores e enviar para o cérebro
-void vTaskSensor(void* pvParamaters) {
-  (void*) pvParamaters;
-
-  for (;;) {
-
-  }
-}
-
-//Tarefa liga/desliga -> Vai ligar, ou desligar, o robô
-void vTaskOnOFF(void* pvParamaters) {
-  (void*) pvParamaters;
-
-  for (;;) {
-
-  }
-}
-
-//Tarefa motor -> Irá controlar o robô, fazendo ele andar e realizar as manobras necessárias.
-void vTaskMotor(void* pvParamaters) {
-  (void*) pvParamaters;
-
-  //Configura o robô para que a tarefa trabalhe com ele
-  for (;;) {
-
-  }
-}
-
-
-
-
-
 /*=====================================|| DEFINIÇÃO DOS MÉTODOS ||==============================*/
 //MÉTODOS DA CLASSE MOTOR
 //Configura pinos do motor
-motorDC::motorDC(uint16_t _pin1, uint16_t _pin2, uint16_t _Speed = 255) {
+motorDC::motorDC(uint16_t _pin1, uint16_t _pin2, uint16_t _Speed = 150) {
   pin1 = _pin1;
   pin2 = _pin2;
   Speed = _Speed;
@@ -105,7 +27,7 @@ motorDC::motorDC() {
   //Esses são os valores por DEFAULT
   pin1 = 10;
   pin2 = 9;
-  Speed=255;
+  Speed = 255;
   pinMode(pin1, OUTPUT);
   pinMode(pin2, OUTPUT);
 }
@@ -139,9 +61,9 @@ void motorDC::turnM(uint16_t spd, uint16_t angle) {
   //Falta programar essa questão do giro.
 }
 
-//MÉTODOS DA CLASSE ROBÔ
+//MÉTODOS DA CLASSE MotorSystem
 //Cadastrar motores para controlar o carro
-Robot::Robot(motorDC* _ME, motorDC* _MD, uint8_t _spd) {
+MotorSystem::MotorSystem(motorDC _ME, motorDC _MD, uint8_t _spd) {
   //Salvando endereços
   ME = _ME;
   MD = _MD;
@@ -151,75 +73,145 @@ Robot::Robot(motorDC* _ME, motorDC* _MD, uint8_t _spd) {
 }
 
 //Andar para frente
-void Robot::ForwardCar(uint16_t t) { //Andar para frente por t segundos
-  ME->Forward();
-  MD->Forward();
+void MotorSystem::ForwardCar(uint16_t t) { //Andar para frente por t segundos
+  ME.Forward();
+  MD.Forward();
   vTaskDelay(pdMS_TO_TICKS(t));
 }
-void Robot::ForwardCar() {
-  ME->Forward();
-  MD->Forward();
+void MotorSystem::ForwardCar() {
+  ME.Forward();
+  MD.Forward();
 }
 
 //Dar ré
-void Robot::BackwardCar(uint16_t t) { //Ré por t segundos
-  ME->Backward();
-  MD->Backward();
+void MotorSystem::BackwardCar(uint16_t t) { //Ré por t segundos
+  ME.Backward();
+  MD.Backward();
   vTaskDelay(pdMS_TO_TICKS(t));
 }
-void Robot::BackwardCar() {
-  ME->Backward();
-  MD->Backward();
+void MotorSystem::BackwardCar() {
+  ME.Backward();
+  MD.Backward();
 }
 
 //Parar o robô
-void Robot::StopCar(uint16_t t) {
-  ME->Stop();
-  MD->Stop();
+void MotorSystem::StopCar(uint16_t t) {
+  ME.Stop();
+  MD.Stop();
   vTaskDelay(pdMS_TO_TICKS(t));
 }
-void Robot::StopCar() {
-  ME->Stop();
-  MD->Stop();
+void MotorSystem::StopCar() {
+  ME.Stop();
+  MD.Stop();
 }
 
 //Andar para a direita
-void Robot::RightCar(uint16_t t) {
-  ME->Stop();
-  MD->Forward();
+void MotorSystem::RightCar(uint16_t t) {
+  ME.Stop();
+  MD.Forward();
   vTaskDelay(pdMS_TO_TICKS(t));
 }
-void Robot::RightCar() {
-  ME->Stop();
-  MD->Forward();
+void MotorSystem::RightCar() {
+  ME.Stop();
+  MD.Forward();
 }
 
 //Andar para a esquerda
-void Robot::LeftCar(uint16_t t) {
-  ME->Forward();
-  MD->Stop();
+void MotorSystem::LeftCar(uint16_t t) {
+  ME.Forward();
+  MD.Stop();
   vTaskDelay(pdMS_TO_TICKS(t));
 }
-void Robot::LeftCar() {
-  ME->Forward();
-  MD->Stop();
+void MotorSystem::LeftCar() {
+  ME.Forward();
+  MD.Stop();
 }
 
 //Girar o robô x graus
-void Robot::turnR(uint16_t spd, uint16_t angle) {
+void MotorSystem::turnR(uint16_t _spd, uint16_t _angle) {
   //Falta programar
 }
 
-//Método que inicia rotina de rastreamento de um carro inimigo.
-void Robot::rastreamento() {
+//Método que inicia rotina de TrackBack de um carro inimigo.
+void MotorSystem::TrackBack(uint8_t _sideOfturn) {
   //Aqui o robô vai estar rodando até encontrar alguém.
-  ME->Forward();
-  MD->Backward();
+  if (_sideOfturn == RST) {//Gira para a direita
+    ME.Forward();
+    MD.Backward();
+  }
+  else if (_sideOfturn == LST) {//Gira para a esquerda
+    ME.Backward();
+    MD.Forward();
+  }
+  else {//Se for enviado um valor diferente desses dois, considera como rotação para a direita
+    ME.Forward();
+    MD.Backward();
+  }
+}
 
-  //Quem vai escolher qual hora ele para de rastrear é o cérebro.
+void MotorSystem::SpeedConfig(uint16_t _spd) {
+  ME.SpeedConfig(_spd);
+  MD.SpeedConfig(_spd);
 }
 
 //Método para realizar rotina de teste dos motores
-void Robot::rotinaRobo(uint16_t t) {
+void MotorSystem::TestRoutine(uint16_t t) {
+  //Testando sentido de movimento
+  ForwardCar(t);//Para frente
+  BackwardCar(t);//Para trás
+  RightCar(t);//Para a direita
+  LeftCar(t);//Para a esquerda.
+  //Testanto controle de velocidade
+  for (int it = 0; it <= 255; it = it + 5) {
+    ForwardCar();
+    SpeedConfig(it);
+    vTaskDelay(pdMS_TO_TICKS(100));//0.1 s cada variação de velocidade
+  }
+}
 
+//MÉTODOS DA CLASSE ULTRASSÔNIC
+//Construtor
+ultrassonic::ultrassonic(uint8_t pinTRIG = 12, uint8_t pinECHO = 13) {
+  _pinTrig = pinTRIG;
+  _pinEcho = pinECHO;
+  pinMode(_pinTrig,OUTPUT);
+  pinMode(_pinEcho,INPUT);
+  //Por default, TRIG=12 e ECHO=13
+}
+
+//Captura distância do sensor.
+float ultrassonic::captureDistance() {
+  //Capturando tempo de emissão do sinal
+  digitalWrite(_pinTrig, LOW);
+  vTaskDelay(pdMS_TO_TICKS(3));
+  digitalWrite(_pinTrig, HIGH);
+  vTaskDelay(pdMS_TO_TICKS(10));
+  digitalWrite(_pinTrig, LOW);
+
+  _timeD = pulseIn(_pinEcho, HIGH);
+
+  //Calculando a distância.
+  _timeD = _timeD / 2;
+
+  distance = _timeD * 0.034; //Valor da distância em cm.
+
+  //OBS: _timeD e distance são variáveis internas a classe,
+  //Portanto, podem ser vistar após a execução desse método.
+  //Zerando o tempo para que não ocorra erro na próxima execução
+  _timeD = 0;
+}
+
+
+//MÉTODOS DA CLASSE SENSORIV
+//Construtor - configura o pino assocaido a esse sensor.
+sensorIV::sensorIV(uint8_t pinDG) {
+  _pinDg = pinDG;
+  pinMode(_pinDG,INPUT); //Configura o pino como entrada de dados.
+}
+
+//Método para descobir se o sensor foi ou não acionado
+bool sensorIV::ReadSensor() {
+  state = (LOW == digitalRead(_pinDg));
+  //O módulo utilizado retorna LOW quando encontra um objeto, portanto
+  //Caso o objeto esteja em Low,ele irá retornar esse valor.
 }
