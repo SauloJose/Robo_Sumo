@@ -4,8 +4,8 @@
   Equipe: Alan, Italo, Saulo, Wellington.
   Objetivo: O robô em questão irá batalhar em um ringue de batalha de robô sumo (classificação 500g)
   no qual deverá agir e batalhar de forma autônoma, sem ajuda de terceiros.
-  Ultima modificação: 05/07/2022 - 15:47
-  placa: UNO.
+  Ultima modificação: 22/07/2022 - 16:27
+:  placa: UNO.
 ****************************************************************************************************/
 
 /*============================================================================*/
@@ -14,21 +14,28 @@
 #define ECHO 12
 #define TRIG 13
 
-//Definindo pinos dos sensores infravermelho
-#define SD1 9
-#define SD2 8
-#define SD3 4
-#define SD4 3
+//Definindo pinos dos sensores infravermelho (analógicos)
+#define SD1 3
+#define SD2 2
+#define SD3 1
+#define SD4 0
 
 //Sensores infravermelhos retornan LOW quando acionados.
 
+//Motores
+#define _MA1 11
+#define _MA2 10
+#define _MB1 6
+#define _MB2 5
+
 //velocidades de ataque (VATK) e rastreamento (VRST)
-#define _VATK 255
-#define _VRST 180
+#define _VATK 180
+#define _VRST 120
+#define _VRE 100
 
 //Distâncias para  atacar
-#define _DATK 50
-#define _DATKMIN 10
+#define _DATK 10
+#define _DATKMIN 4
 
 //definir pino de interrupção, no nosso caso, será remoto.
 #define BOT 2 //Interrupção 0.
@@ -113,8 +120,8 @@ volatile int estado = HIGH;
 //Iniciando o Setup
 void setup() {
   //Configurando os pinos do motor
-  Motor1.Pinout(11, 10);
-  Motor2.Pinout(6, 5);
+  Motor1.Pinout(_MA1, _MA2);
+  Motor2.Pinout(_MB1, _MB2);
 
   //Gerando interrupção no pino 2.
 
@@ -138,95 +145,90 @@ void loop() {
   //Pega valor em cm da distância.
   float cm = 0;
   cm = cmDet();
-
   //Valores dos sensores infravermelhos
   //V1,V2,V3 e V4 ficam em true caso sejam acionadas
-  bool v1 = (LOW == digitalRead(SD1));
-  bool v2 = (LOW == digitalRead(SD2));
-  bool v3 = (LOW == digitalRead(SD3));
-  bool v4 = (LOW == digitalRead(SD4));
-
+  bool v1 = (analogRead(SD1)>200);
+  Serial.println(analogRead(SD1));
+  bool v2 = (analogRead(SD2)>200);
+  Serial.println(analogRead(SD2));
+  //bool v3 = (analogRead(SD3)>200);
+  //bool v4 = (analogRead(SD4)>200);
+  bool v3 = false;
+  bool v4 = false;
+  Serial.println(v3);
+  Serial.println(v4);
   //Valor de localização do sensor ultrassônico
-  bool us = false;//Inicializa em false
-  us = (cm < _DATK); //Verifica se está ou não dentro da distância
 
+  //P
 
   //Pega os valores da distância.
   Serial.print("Dist: ");
   Serial.print(cm);
   Serial.println(" cm");
   //Rastreia até encontrar algo, e então ele vai em direção.
-  if (us) {//Caso a distância entre objeto seja menor que a distância mínima de ataque.
+  if (cm < _DATK) {//Caso a distância entre objeto seja menor que a distância mínima de ataque.
     //Maneiras de ataque
-    if (((~v1)&&(~V2)) || ((~v2) && v4) || ((~v1) && v4)) { //Situação A1 ->ATAQUE
+    Serial.println("distancia dentro");
+    if ((!v1) && (!v2)) {
+      Serial.println("SITUAÇÃO 1");
       frente();
     }
-    else if ((~v1) && v2 && (~v2)) { //-> Situação E1 -> Combinação de ataque.
-      //Analisa distância entre os objetos.
-      if (cm < _DATKMIN) {//Distância mínima para ataque!
+    else if ((!v1) && (v2)) {
+      Serial.println("SITUAÇÃO 2");
+      if (cm < _DATKMIN) {
+        para();
         frente();
       }
-      else {//Reposicionar, estratégia!
-        esquerda(100);//Reposicionando
-        rastreamento(true);//Rastrear para a direita
+      else {
+        para();
+        direita();
       }
     }
-    else if ((v1) && (~v2) && (~v4)) { //-> SITUAÇÃO E2-> COMBINAÇÃO DE ATAQUE
-      //Analisa distÂncia entre os objetos
-      if (cm < _DATKMIN) {//Distância mínima para ataque!
+    else if ((v1) && (!v2)) {
+      Serial.println("SITUAÇÃO 3");
+      if (cm < _DATKMIN) {
+        para();
         frente();
       }
-      else {//Reposicionar, estratégia!
-        direita(100);
-        rastreamento(false);//Rastrear para a esquerda
+      else {
+        para();
+        esquerda();
       }
     }
-    else if ((v1 && v2 && (~v3) && (v4)) || (v1 && v2 && (v3) && (~v4)))  { //=> SITUAÇÃO E3 -> COMBINAÇÃO DE ATAQUE.
-      re(200);//Dá ré
-      rastreamento(true);//Rastreia para a direita
-    }
-    else if (v1 && v2 && (~v3) && (~v4)) {//Caso de vitória
-      //Nesse caso, provavelmente ele ganhou. Então só comemora
-      rastreamento(true);
-      velocidade(255);
-      //Colocar uns leds para piscar e um buzzer para fzr zuada (tocando a música de starwars)
-
-    }
-    else {//Situação de erro, ou seja, impossível de acontecer.
-      //Sinalisar um led é uma boa opção...
-      rastreamento(true);
-    }
-  }
-  else {//Se a distância detectada for maior que a distância de ataque
-    //Rastrear
-    if (((~v1) && (~v3) && (v4)) || ((~v1) && (v2) && (~v3))) { //Caso R1
-
-    }
-    else if (((~v1) && (~v2) && v3) || ((~v2) && (~v4))) { //Caso R2
-
-    }
-    else if ((v1 && v2 && (~v3)) || (v1 && v2 && (~v4))) { //Caso R3
-
-    }
-    else { //Caso de erro ou não planejado
-      rastreamento(true);
-
-    }
-
-
-  }
-  /*//Aqui vai estar o código para testar os sensores.
-    //Código base de apenas rastrear e seguir.
-    if (cm > _DATK) {
-    //Enquanto não encontrar um alvo dentro do alcance, ele rastreina os inimigos.
-    //Rotina de rastreamento
-    rastreamento();
+    else if (v1 && v2) {
+      Serial.println("SITUAÇÃO 4");
+      Serial.println("FUNCIONANDO");
+      re();
     }
     else {
-    frente();
+      rastreamento(true);
+      Serial.println("ERRO DE LÓGICA");
     }
 
-  */
+  }
+  else {//Se a distância detectada for maior que a distância de ataque
+    //Maneiras de ataque
+    if ((!v1) && (!v2)) {
+      Serial.println("SITUAÇÃO 1");
+      rastreamento(true);//Rastreia para a direita
+    }
+    else if ((!v1) && (v2)) {
+      Serial.println("SITUAÇÃO 2");
+      rastreamento(false);//Rastrear para a esquerda
+    }
+    else if ((v1) && (!v2)) {
+      Serial.println("SITUAÇÃO 3");
+      rastreamento(true);//Rastrear para a direita
+    }
+    else if (v1 && v2) {
+      Serial.println("SITUAÇÃO 4");
+      re();
+   }
+    else {
+      rastreamento(true);
+      Serial.println("ERRO DE LÓGICA");
+    }
+  }
 }
 /*============================================================================*/
 //Definindo funções utilizadas pelo robô.
@@ -247,12 +249,15 @@ void frente(uint8_t t) {
   delay(t);
 }
 void re() {
+  Serial.println("RE");
   // Comando para o motor ir para trás
   Motor1.Backward();
   Motor2.Backward();
 }
 
 void re(uint8_t t) {
+  Serial.println("RE");
+  velocidade(_VRE);
   // Comando para o motor ir para trás
   Motor1.Backward();
   Motor2.Backward();
@@ -350,15 +355,17 @@ void chaveOnOff() {
 
 void rastreamento(bool dir) {
   //Gira até detectar alguém
-  Serial.println("RASTREAMENTO");
-  if (dir = true) {
+  Serial.print("RASTREAMENTO: ");
+  if (dir) {
     //Rastreia para o lado direito.
+    Serial.println("DIREITA");
     velocidade(_VRST);
     Motor1.Forward();
     Motor2.Backward();
   }
   else {
     //Rastreia para o lado esquerdo
+    Serial.println("ESQUERDA");
     velocidade(_VRST);
     Motor1.Backward();
     Motor2.Forward();
